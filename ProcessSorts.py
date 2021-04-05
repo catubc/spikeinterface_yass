@@ -2,7 +2,7 @@ from sfsortingresults import SFSortingResults
 import numpy as np
 import spikeextractors as se
 from spikecomparison import GroundTruthStudy
-
+import pickle
 import os
 import yaml
 import glob2
@@ -189,21 +189,34 @@ class ProcessSorts():
 
         study_folder = os.path.join(self.root_dir, str(self.target_study), str(self.target_recording))+'/'
 
-        study = GroundTruthStudy(study_folder)
+        fname_pickle = study_folder+'study.pkl'
 
-        # fix the ground truth sampling frequency
-        fnames = glob2.glob(study_folder+ 'sortings/*.npz')
-        sf = np.load(fnames[0])['sampling_frequency']
+        if os.path.exists(fname_pickle)==False:
+            print ("Running study: ", study_folder)
+            study = GroundTruthStudy(study_folder)
 
-        gt_data = np.load(study_folder+'/ground_truth/rec0.npz')
-        np.savez(study_folder+'/ground_truth/rec0.npz',
-                unit_ids = gt_data['unit_ids'],
-                spike_labels = gt_data['spike_labels'],
-                spike_indexes = gt_data['spike_indexes'],
-                sampling_frequency = sf)
+            # fix the ground truth sampling frequency
+            fnames = glob2.glob(study_folder+ 'sortings/*.npz')
+            sf = np.load(fnames[0])['sampling_frequency']
+
+            gt_data = np.load(study_folder+'/ground_truth/rec0.npz')
+            np.savez(study_folder+'/ground_truth/rec0.npz',
+                    unit_ids = gt_data['unit_ids'],
+                    spike_labels = gt_data['spike_labels'],
+                    spike_indexes = gt_data['spike_indexes'],
+                    sampling_frequency = sf)
 
 
-        #
-        study.run_comparisons(exhaustive_gt=True,
-                              match_score=0.0,
-                              delta_time=3.0)
+            #
+            study.run_comparisons(exhaustive_gt=True,
+                                  match_score=0.0,
+                                  delta_time=3.0)
+
+            file_to_store = open(fname_pickle, "wb")
+            pickle.dump(study, file_to_store)
+            file_to_store.close()
+
+
+        print ("")
+        print ("")
+        print ("")
