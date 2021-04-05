@@ -19,10 +19,10 @@ class ProcessSorts():
 
         #
         self.data_yass = np.load(fname_yass)
-        self.target_folder = self.data_yass['folder_name']
+        #self.target_folder = self.data_yass['folder_name']
         self.target_study = self.data_yass['study_name']
         self.target_recording = self.data_yass['rec_name']
-        print (self.target_folder, self.target_study, self.target_recording)
+        # print (self.target_folder, self.target_study, self.target_recording)
 
         # get config file name
         fname_config = fname_yass[:-4]+".yaml"
@@ -33,6 +33,7 @@ class ProcessSorts():
 
         #
         self.make_dirs()
+
 
     def extract_all_sorts(self):
 
@@ -51,6 +52,9 @@ class ProcessSorts():
         self.dir_sortings = os.path.join(self.root_dir,
                             str(self.target_study),
                             str(self.target_recording),'sortings')
+        self.dir_run_log = os.path.join(self.root_dir,
+                            str(self.target_study),
+                            str(self.target_recording),'sortings','run_log')
         self.dir_ground_truth = os.path.join(self.root_dir,
                             str(self.target_study),
                             str(self.target_recording),'ground_truth')
@@ -67,6 +71,15 @@ class ProcessSorts():
             os.makedirs(self.dir_ground_truth)
         if os.path.exists(self.dir_yass_output)==False:
             os.makedirs(self.dir_yass_output)
+        if os.path.exists(self.dir_run_log)==False:
+            os.makedirs(self.dir_run_log)
+
+        # save names.txt
+        np.savetxt(os.path.join(self.root_dir,
+                            str(self.target_study),
+                            str(self.target_recording),
+                            'names.txt'),['rec0'], fmt="%s")
+        #num.savetxt('test.txt', DAT, delimiter=" ", fmt="%s")
 
     #
     def save_yass(self):
@@ -150,4 +163,23 @@ class ProcessSorts():
         se.NpzSortingExtractor.write_sorting(gt_sorting, save_path)
 
 
+    def run_GTstudy(self):
+        study_folder = '/media/cat/1TB/spikesorting/sorting_analysis/hybrid_static_siprobe/rec_32c_600s_11/'
+        study = GroundTruthStudy(study_folder)
 
+        # fix the ground truth sampling frequency
+        fnames = glob2.glob(study_folder+ 'sortings/*.npz')
+        sf = np.load(fnames[0])['sampling_frequency']
+
+        gt_data = np.load(study_folder+'/ground_truth/rec0.npz')
+        np.savez(study_folder+'/ground_truth/rec0.npz',
+                unit_ids = gt_data['unit_ids'],
+                spike_labels = gt_data['spike_labels'],
+                spike_indexes = gt_data['spike_indexes'],
+                sampling_frequency = sf)
+
+
+        #
+        study.run_comparisons(exhaustive_gt=True,
+                              match_score=0.0,
+                              delta_time=3.0)
