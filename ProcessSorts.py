@@ -1,6 +1,7 @@
 from sfsortingresults import SFSortingResults
 import numpy as np
 import spikeextractors as se
+from spikecomparison import GroundTruthStudy
 
 import os
 import yaml
@@ -9,10 +10,11 @@ import glob2
 # make required files/directories
 class ProcessSorts():
 
-    def __init__(self, fname_yass, sfresults):
+    def __init__(self, fname_yass, sfresults,
+                 dir_analysis):
 
         #
-        self.root_dir = '/media/cat/1TB/spikesorting/sorting_analysis/'
+        self.root_dir = dir_analysis
 
         #
         self.sfresults = sfresults
@@ -34,6 +36,14 @@ class ProcessSorts():
         #
         self.make_dirs()
 
+        try:
+
+            gt_sorting = self.sfresults.get_gt_sorting_output(study_name=self.target_study,
+                                                              recording_name=self.target_recording)
+
+            self.study_exists=True
+        except:
+            self.study_exists=False
 
     def extract_all_sorts(self):
 
@@ -41,10 +51,12 @@ class ProcessSorts():
         self.save_yass()
 
         #
-        self.save_sorts()
+        self.save_gt()
 
         #
-        self.save_gt()
+        self.save_sorts()
+
+
 
 
     def make_dirs(self):
@@ -125,8 +137,13 @@ class ProcessSorts():
 
     def save_sorts(self):
         # retrieve available sorter outputs
-        sorting_output_names = self.sfresults.get_sorting_output_names(study_name=self.target_study,
-                                                                  recording_name=self.target_recording)
+        try:
+            sorting_output_names = self.sfresults.get_sorting_output_names(study_name=self.target_study,
+                                                                      recording_name=self.target_recording)
+        except Exception as e:
+            print ("    dataset missing, ", e)
+            return
+
         print(f"Recording {self.target_recording} has the following sorting outputs:\n{sorting_output_names}")
 
         #
@@ -139,7 +156,7 @@ class ProcessSorts():
                                                    sorter_name=target_sorting_output)
                 self.save_sorter(sorting)
             except Exception as e:
-                print ("error: ", e)
+                print ("error in extracting sorter: ", e)
             print ('')
         # run comparison study
 
@@ -155,16 +172,23 @@ class ProcessSorts():
 
 
     def save_gt(self):
+        try:
 
-        gt_sorting = self.sfresults.get_gt_sorting_output(study_name=self.target_study,
-                                                     recording_name=self.target_recording)
+            gt_sorting = self.sfresults.get_gt_sorting_output(study_name=self.target_study,
+                                                         recording_name=self.target_recording)
 
-        save_path = os.path.join(self.dir_ground_truth, 'rec0.npz')
-        se.NpzSortingExtractor.write_sorting(gt_sorting, save_path)
+            save_path = os.path.join(self.dir_ground_truth, 'rec0.npz')
+            se.NpzSortingExtractor.write_sorting(gt_sorting, save_path)
+        except Exception as e:
+            print ("      Error loading ground truth, likely daaset not avialble; ", e)
+
 
 
     def run_GTstudy(self):
-        study_folder = '/media/cat/1TB/spikesorting/sorting_analysis/hybrid_static_siprobe/rec_32c_600s_11/'
+        #study_folder = '/media/cat/1TB/spikesorting/sorting_analysis/hybrid_static_siprobe/rec_32c_600s_11/'
+
+        study_folder = os.path.join(self.root_dir, str(self.target_study), str(self.target_recording))+'/'
+
         study = GroundTruthStudy(study_folder)
 
         # fix the ground truth sampling frequency
