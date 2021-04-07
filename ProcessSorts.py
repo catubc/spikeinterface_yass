@@ -216,6 +216,19 @@ class ProcessSorts():
             pickle.dump(study, file_to_store)
             file_to_store.close()
 
+            # also save
+            dataframes = study.aggregate_dataframes()
+            fname_out_npz= study_folder + "/"+ str(self.target_study)+"-"+ str(self.target_recording)+".npz"
+            np.savez(fname_out_npz, dataframes['count_units'])
+        else:
+            print (str(self.target_study), str(self.target_recording))
+            with open(fname_pickle, 'rb') as handle:
+                study = pickle.load(handle)
+
+            # also save npz for later
+            dataframes = study.aggregate_dataframes()
+            fname_out_npz= study_folder + "/"+ str(self.target_study)+"-"+ str(self.target_recording)+".npz"
+            np.savez(fname_out_npz, dataframes['count_units'])
 
         print ("")
         print ("")
